@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Labyrinth</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .description {
+            text-align: center;
+            margin: 20px 0;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: 'Courier New', monospace;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .maze-container {
+            display: grid;
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            margin: 20px auto;
+            width: fit-content;
+            border-radius: 8px;
+        }
+
+        .maze-cell {
+            width: 50px;
+            height: 50px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            position: relative;
+        }
+
+        .maze-cell.wall {
+            background: #333;
+        }
+
+        .maze-cell.player {
+            background: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+
+        .maze-cell.goal {
+            background: #90EE90;
+        }
+
+        .game-info {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .word-display {
+            font-size: 2em;
+            text-align: center;
+            color: #667eea;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            width: 100px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 300px;
+            margin: 20px auto;
+        }
+
+        .direction-buttons button {
+            padding: 10px;
+            font-size: 1em;
+        }
+
+        .direction-buttons button:nth-child(1) {
+            grid-column: 2;
+        }
+
+        .language-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .language-option {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .language-option:hover {
+            background: #f0f0ff;
+            transform: translateX(5px);
+        }
+
+        .language-option-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .language-option-detail {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            color: #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <h1>🧠 Token Labyrinth 🧠</h1>
+            <div class="description">
+                <p>Welcome, brave explorer! This game teaches you how AI models break text into <strong>tokens</strong>.</p>
+                <p>Tokens are the building blocks that large language models use to understand and generate text. Different words and languages use different numbers of tokens!</p>
+            </div>
+            <div class="button-container">
+                <button onclick="startTokenGuessMode()">🎯 Start Token Guess Mode</button>
+                <button onclick="startLanguageMazeMode()">🌍 Start Language Maze Mode</button>
+            </div>
+            <div class="info-box">
+                <strong>💡 What you'll learn:</strong><br>
+                • How text is broken into tokens<br>
+                • Why some words use more tokens than others<br>
+                • How different languages affect token counts<br>
+                • Why this matters for AI models
+            </div>
+        </div>
+
+        <!-- Token Guess Mode Screen -->
+        <div id="token-guess-screen" class="screen">
+            <h1>Token Guess Mode</h1>
+            <button onclick="showWelcome()" style="margin-bottom: 15px;">← Back to Menu</button>
+            
+            <div class="game-info">
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Position</div>
+                        <div class="stat-value" id="tg-position">0, 0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Steps Left</div>
+                        <div class="stat-value" id="tg-steps">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Words Solved</div>
+                        <div class="stat-value" id="tg-words-solved">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tg-maze" class="maze-container"></div>
+
+            <div class="word-display" id="tg-word">Loading...</div>
+            
+            <div class="input-group">
+                <input type="number" id="tg-guess" min="1" max="20" placeholder="Tokens?">
+                <button onclick="submitTokenGuess()">Submit Guess</button>
+            </div>
+
+            <div id="tg-message" class="message hidden"></div>
+
+            <div id="tg-direction-panel" class="hidden">
+                <p style="text-align: center; margin: 15px 0;">Choose your direction:</p>
+                <div class="direction-buttons">
+                    <button onclick="move('up')">⬆️ Up</button>
+                    <button onclick="move('left')">⬅️ Left</button>
+                    <button onclick="move('right')">➡️ Right</button>
+                    <button onclick="move('down')">⬇️ Down</button>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>How to play:</strong> Guess how many tokens each word contains. If you're correct, you can move that many steps through the maze. Reach the goal (⭐) to win!
+            </div>
+        </div>
+
+        <!-- Language Maze Mode Screen -->
+        <div id="language-maze-screen" class="screen">
+            <h1>Language Maze Mode</h1>
+            <button onclick="showWelcome()" style="margin-bottom: 15px;">← Back to Menu</button>
+            
+            <div class="game-info">
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Position</div>
+                        <div class="stat-value" id="lm-position">0, 0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Step Limit</div>
+                        <div class="stat-value" id="lm-step-limit">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Round</div>
+                        <div class="stat-value" id="lm-round">1</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="lm-maze" class="maze-container"></div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: 1.3em; color: #666; margin-bottom: 10px;">Meaning:</div>
+                <div class="word-display" id="lm-meaning">Loading...</div>
+            </div>
+
+            <div class="language-options" id="lm-options"></div>
+
+            <div id="lm-message" class="message hidden"></div>
+
+            <div class="info-box">
+                <strong>How to play:</strong> Choose a language version of the word. You'll move forward by its token count, but don't exceed the step limit! Different languages use different token counts in AI models.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Token data for Token Guess Mode
+        const tokenData = {
+            "jellyfish": 3,
+            "internationalization": 7,
+            "AI": 1,
+            "photosynthesis": 4,
+            "algorithm": 3,
+            "butterfly": 3,
+            "cat": 1,
+            "extraordinary": 5,
+            "hello": 1,
+            "cryptocurrency": 5,
+            "wavelength": 3,
+            "biodiversity": 6,
+            "ecosystem": 4,
+            "magnificent": 4,
+            "JavaScript": 2
+        };
+
+        // Language token data for Language Maze Mode
+        const languageTokenData = [
+            {
+                meaning: "water",
+                options: [
+                    { lang: "English", word: "water", tokens: 1 },
+                    { lang: "Chinese", word: "水", tokens: 1 },
+                    { lang: "Spanish", word: "agua", tokens: 2 }
+                ]
+            },
+            {
+                meaning: "internationalization",
+                options: [
+                    { lang: "English", word: "internationalization", tokens: 7 },
+                    { lang: "Chinese", word: "国际化", tokens: 2 },
+                    { lang: "Japanese", word: "国際化", tokens: 2 }
+                ]
+            },
+            {
+                meaning: "computer",
+                options: [
+                    { lang: "English", word: "computer", tokens: 2 },
+                    { lang: "Chinese", word: "电脑", tokens: 1 },
+                    { lang: "Spanish", word: "computadora", tokens: 4 }
+                ]
+            },
+            {
+                meaning: "beautiful",
+                options: [
+                    { lang: "English", word: "beautiful", tokens: 2 },
+                    { lang: "French", word: "belle", tokens: 2 },
+                    { lang: "Japanese", word: "美しい", tokens: 2 }
+                ]
+            },
+            {
+                meaning: "university",
+                options: [
+                    { lang: "English", word: "university", tokens: 3 },
+                    { lang: "Chinese", word: "大学", tokens: 1 },
+                    { lang: "German", word: "Universität", tokens: 4 }
+                ]
+            }
+        ];
+
+        // Maze layout (0 = path, 1 = wall)
+        const mazeLayout = [
+            [0, 0, 1, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0],
+            [0, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0],
+            [1, 1, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0]
+        ];
+
+        // Game state
+        let gameState = {
+            mode: null,
+            playerPos: { row: 0, col: 0 },
+            goalPos: { row: 6, col: 6 },
+            stepsRemaining: 0,
+            currentWord: null,
+            currentTokens: 0,
+            wordsSolved: 0,
+            usedWords: [],
+            languageRound: 0,
+            stepLimit: 0
+        };
+
+        // Initialize screens
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showWelcome() {
+            showScreen('welcome-screen');
+            resetGame();
+        }
+
+        function resetGame() {
+            gameState = {
+                mode: null,
+                playerPos: { row: 0, col: 0 },
+                goalPos: { row: 6, col: 6 },
+                stepsRemaining: 0,
+                currentWord: null,
+                currentTokens: 0,
+                wordsSolved: 0,
+                usedWords: [],
+                languageRound: 0,
+                stepLimit: 0
+            };
+        }
+
+        // Token Guess Mode
+        function startTokenGuessMode() {
+            resetGame();
+            gameState.mode = 'token-guess';
+            showScreen('token-guess-screen');
+            renderMaze('tg-maze');
+            loadNewWord();
+            updateTokenGuessUI();
+        }
+
+        function loadNewWord() {
+            const availableWords = Object.keys(tokenData).filter(w => !gameState.usedWords.includes(w));
+            if (availableWords.length === 0) {
+                gameState.usedWords = [];
+            }
+            const words = availableWords.length > 0 ? availableWords : Object.keys(tokenData);
+            gameState.currentWord = words[Math.floor(Math.random() * words.length)];
+            gameState.currentTokens = tokenData[gameState.currentWord];
+            gameState.usedWords.push(gameState.currentWord);
+            document.getElementById('tg-word').textContent = gameState.currentWord;
+            document.getElementById('tg-guess').value = '';
+            hideMessage('tg-message');
+            document.getElementById('tg-direction-panel').classList.add('hidden');
+        }
+
+        function submitTokenGuess() {
+            const guess = parseInt(document.getElementById('tg-guess').value);
+            if (!guess) {
+                showMessage('tg-message', 'Please enter a number!', 'error');
+                return;
+            }
+
+            if (guess === gameState.currentTokens) {
+                gameState.stepsRemaining = gameState.currentTokens;
+                gameState.wordsSolved++;
+                showMessage('tg-message', 
+                    `✅ Correct! "${gameState.currentWord}" has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. You can move ${gameState.stepsRemaining} steps!`, 
+                    'success');
+                document.getElementById('tg-direction-panel').classList.remove('hidden');
+                updateTokenGuessUI();
+            } else {
+                showMessage('tg-message', 
+                    `❌ Not quite! "${gameState.currentWord}" actually has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. Try the next word!`, 
+                    'error');
+                setTimeout(loadNewWord, 2000);
+            }
+        }
+
+        function move(direction) {
+            if (gameState.stepsRemaining <= 0) return;
+
+            const newPos = { ...gameState.playerPos };
+            switch(direction) {
+                case 'up': newPos.row--; break;
+                case 'down': newPos.row++; break;
+                case 'left': newPos.col--; break;
+                case 'right': newPos.col++; break;
+            }
+
+            // Check boundaries
+            if (newPos.row < 0 || newPos.row >= 7 || newPos.col < 0 || newPos.col >= 7) {
+                showMessage('tg-message', '🚫 Can\'t move there - out of bounds!', 'error');
+                return;
+            }
+
+            // Check walls
+            if (mazeLayout[newPos.row][newPos.col] === 1) {
+                showMessage('tg-message', '🚫 Can\'t move there - it\'s a wall!', 'error');
+                return;
+            }
+
+            // Valid move
+            gameState.playerPos = newPos;
+            gameState.stepsRemaining--;
+            renderMaze('tg-maze');
+            updateTokenGuessUI();
+
+            // Check win condition
+            if (gameState.playerPos.row === gameState.goalPos.row && 
+                gameState.playerPos.col === gameState.goalPos.col) {
+                showMessage('tg-message', '🎉 You escaped the Token Labyrinth! You win!', 'success');
+                document.getElementById('tg-direction-panel').classList.add('hidden');
+                return;
+            }
+
+            // Load new word if no steps left
+            if (gameState.stepsRemaining === 0) {
+                setTimeout(loadNewWord, 1000);
+            }
+        }
+
+        function updateTokenGuessUI() {
+            document.getElementById('tg-position').textContent = `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
+            document.getElementById('tg-steps').textContent = gameState.stepsRemaining;
+            document.getElementById('tg-words-solved').textContent = gameState.wordsSolved;
+        }
+
+        // Language Maze Mode
+        function startLanguageMazeMode() {
+            resetGame();
+            gameState.mode = 'language-maze';
+            gameState.languageRound = 0;
+            showScreen('language-maze-screen');
+            renderMaze('lm-maze');
+            loadLanguageRound();
+        }
+
+        function loadLanguageRound() {
+            if (gameState.languageRound >= languageTokenData.length) {
+                gameState.languageRound = 0;
+            }
+
+            const roundData = languageTokenData[gameState.languageRound];
+            gameState.stepLimit = Math.floor(Math.random() * 3) + 2; // 2-4 steps
+
+            document.getElementById('lm-meaning').textContent = roundData.meaning;
+            document.getElementById('lm-step-limit').textContent = gameState.stepLimit;
+            document.getElementById('lm-round').textContent = gameState.languageRound + 1;
+
+            const optionsContainer = document.getElementById('lm-options');
+            optionsContainer.innerHTML = '';
+
+            roundData.options.forEach(option => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'language-option';
+                optionDiv.onclick = () => selectLanguage(option);
+                optionDiv.innerHTML = `
+                    <div class="language-option-text">${option.word} (${option.lang})</div>
+                    <div class="language-option-detail">Click to choose this language</div>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+
+            hideMessage('lm-message');
+            updateLanguageMazeUI();
+        }
+
+        function selectLanguage(option) {
+            const tokenCount = option.tokens;
+
+            if (tokenCount > gameState.stepLimit) {
+                showMessage('lm-message', 
+                    `❌ Too many tokens! "${option.word}" uses ${tokenCount} token${tokenCount > 1 ? 's' : ''}, but the limit is ${gameState.stepLimit}. Try a different language!`, 
+                    'error');
+                return;
+            }
+
+            // Auto-move forward
+            let moved = 0;
+            for (let i = 0; i < tokenCount; i++) {
+                const newPos = { ...gameState.playerPos };
+                
+                // Try to move right first, then down
+                if (newPos.col < 6 && mazeLayout[newPos.row][newPos.col + 1] === 0) {
+                    newPos.col++;
+                } else if (newPos.row < 6 && mazeLayout[newPos.row + 1][newPos.col] === 0) {
+                    newPos.row++;
+                } else {
+                    break;
+                }
+
+                gameState.playerPos = newPos;
+                moved++;
+            }
+
+            renderMaze('lm-maze');
+            updateLanguageMazeUI();
+
+            const educational = `In this tokenizer, "${option.word}" (${option.lang}) uses ${tokenCount} token${tokenCount > 1 ? 's' : ''}. AI models "see" different languages as different-sized inputs!`;
+            
+            showMessage('lm-message', 
+                `✅ Good choice! You moved ${moved} step${moved > 1 ? 's' : ''} forward. ${educational}`, 
+                'info');
+
+            // Check win condition
+            if (gameState.playerPos.row === gameState.goalPos.row && 
+                gameState.playerPos.col === gameState.goalPos.col) {
+                showMessage('lm-message', '🎉 You escaped the Token Labyrinth! You win!', 'success');
+                return;
+            }
+
+            gameState.languageRound++;
+            setTimeout(loadLanguageRound, 3000);
+        }
+
+        function updateLanguageMazeUI() {
+            document.getElementById('lm-position').textContent = `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
+        }
+
+        // Maze rendering
+        function renderMaze(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(7, 50px)`;
+
+            for (let row = 0; row < 7; row++) {
+                for (let col = 0; col < 7; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'maze-cell';
+
+                    if (mazeLayout[row][col] === 1) {
+                        cell.classList.add('wall');
+                    }
+
+                    if (row === gameState.playerPos.row && col === gameState.playerPos.col) {
+                        cell.classList.add('player');
+                        cell.textContent = '🧙‍♂️';
+                    } else if (row === gameState.goalPos.row && col === gameState.goalPos.col) {
+                        cell.classList.add('goal');
+                        cell.textContent = '⭐';
+                    }
+
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        // Helper functions
+        function showMessage(id, text, type) {
+            const msg = document.getElementById(id);
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.classList.remove('hidden');
+        }
+
+        function hideMessage(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Allow Enter key to submit guess
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('tg-guess').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitTokenGuess();
+            });
+        });
+    </script>
+</body>
+</html>
