@@ -169,9 +169,11 @@
             color: #0c5460;
         }
 
+        /* Direction buttons as a natural D-pad */
         .direction-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, auto);
             gap: 10px;
             max-width: 300px;
             margin: 20px auto;
@@ -182,8 +184,24 @@
             font-size: 1em;
         }
 
-        .direction-buttons button:nth-child(1) {
+        .direction-buttons .btn-up {
             grid-column: 2;
+            grid-row: 1;
+        }
+
+        .direction-buttons .btn-left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .direction-buttons .btn-right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .direction-buttons .btn-down {
+            grid-column: 2;
+            grid-row: 3;
         }
 
         .language-options {
@@ -266,7 +284,7 @@
                 <p><strong>Your goal:</strong> guide the wizard 🧙‍♂️ through the maze to reach the ⭐ exit.</p>
                 <p>
                     In <strong>Token Guess Mode</strong>, correct guesses give you movement steps.  
-                    In <strong>Language Maze Mode</strong>, you choose between language versions without going over the step limit.
+                    In <strong>Language Maze Mode</strong>, you choose language versions without going over the step limit.
                     If you keep choosing options that break the rules, you’ll stay stuck in the labyrinth instead of winning.
                 </p>
             </div>
@@ -320,16 +338,16 @@
 
             <div id="tg-message" class="message hidden"></div>
 
-            <!-- NEW: Explanation box after incorrect guesses -->
+            <!-- Explanation box after incorrect guesses -->
             <div id="tg-explanation" class="info-box hidden"></div>
 
             <div id="tg-direction-panel" class="hidden">
                 <p style="text-align: center; margin: 15px 0;">Choose your direction:</p>
                 <div class="direction-buttons">
-                    <button onclick="move('up')">⬆️ Up</button>
-                    <button onclick="move('left')">⬅️ Left</button>
-                    <button onclick="move('right')">➡️ Right</button>
-                    <button onclick="move('down')">⬇️ Down</button>
+                    <button class="btn-up" onclick="move('up')">⬆️ Up</button>
+                    <button class="btn-left" onclick="move('left')">⬅️ Left</button>
+                    <button class="btn-right" onclick="move('right')">➡️ Right</button>
+                    <button class="btn-down" onclick="move('down')">⬇️ Down</button>
                 </div>
             </div>
 
@@ -397,7 +415,7 @@
             "JavaScript": 2
         };
 
-        // NEW: Explanations for how each word is tokenized (concise, textual)
+        // Explanations for how each word is tokenized (concise, textual)
         const tokenExplanations = {
             "jellyfish": `In this tokenizer, "jellyfish" is treated as 3 pieces (subwords), so it counts as 3 tokens.`,
             "internationalization": `"internationalization" is long, so it is broken into several subwords like "international", "iz", and "ation" for a total of 7 tokens.`,
@@ -510,7 +528,6 @@
                 stepLimit: 0
             };
 
-            // Clear any lingering messages/explanations
             hideMessage('tg-message');
             const expBox = document.getElementById('tg-explanation');
             if (expBox) {
@@ -543,14 +560,12 @@
             hideMessage('tg-message');
             document.getElementById('tg-direction-panel').classList.add('hidden');
 
-            // Hide explanation for the new word until needed
             const expBox = document.getElementById('tg-explanation');
             expBox.classList.add('hidden');
             expBox.textContent = '';
         }
 
         function getTokenExplanation(word, tokens) {
-            // Use custom explanation if available; otherwise fall back to a generic one
             if (tokenExplanations[word]) {
                 return tokenExplanations[word];
             }
@@ -573,26 +588,27 @@
                 gameState.stepsRemaining = gameState.currentTokens;
                 gameState.wordsSolved++;
 
-                // Hide any previous explanation when the player is correct
                 expBox.classList.add('hidden');
                 expBox.textContent = '';
 
-                showMessage('tg-message', 
-                    `✅ Correct! "${gameState.currentWord}" has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. You can move ${gameState.stepsRemaining} steps!`, 
-                    'success');
+                showMessage(
+                    'tg-message',
+                    `✅ Correct! "${gameState.currentWord}" has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. You can move ${gameState.stepsRemaining} steps!`,
+                    'success'
+                );
                 document.getElementById('tg-direction-panel').classList.remove('hidden');
                 updateTokenGuessUI();
             } else {
-                // Show correct answer + explanation of tokenization
                 const explanationText = getTokenExplanation(gameState.currentWord, gameState.currentTokens);
                 expBox.textContent = explanationText;
                 expBox.classList.remove('hidden');
 
-                showMessage('tg-message', 
-                    `❌ Not quite! "${gameState.currentWord}" actually has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. Read the explanation below, then try the next word.`, 
-                    'error');
+                showMessage(
+                    'tg-message',
+                    `❌ Not quite! "${gameState.currentWord}" actually has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. Read the explanation below, then try the next word.`,
+                    'error'
+                );
 
-                // Give the player a bit more time to read the explanation
                 setTimeout(loadNewWord, 3000);
             }
         }
@@ -601,7 +617,7 @@
             if (gameState.stepsRemaining <= 0) return;
 
             const newPos = { ...gameState.playerPos };
-            switch(direction) {
+            switch (direction) {
                 case 'up': newPos.row--; break;
                 case 'down': newPos.row++; break;
                 case 'left': newPos.col--; break;
@@ -627,21 +643,23 @@
             updateTokenGuessUI();
 
             // Check win condition
-            if (gameState.playerPos.row === gameState.goalPos.row && 
-                gameState.playerPos.col === gameState.goalPos.col) {
+            if (
+                gameState.playerPos.row === gameState.goalPos.row &&
+                gameState.playerPos.col === gameState.goalPos.col
+            ) {
                 showMessage('tg-message', '🎉 You escaped the Token Labyrinth! You win!', 'success');
                 document.getElementById('tg-direction-panel').classList.add('hidden');
                 return;
             }
 
-            // Load new word if no steps left
             if (gameState.stepsRemaining === 0) {
                 setTimeout(loadNewWord, 1000);
             }
         }
 
         function updateTokenGuessUI() {
-            document.getElementById('tg-position').textContent = `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
+            document.getElementById('tg-position').textContent =
+                `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
             document.getElementById('tg-steps').textContent = gameState.stepsRemaining;
             document.getElementById('tg-words-solved').textContent = gameState.wordsSolved;
         }
@@ -690,9 +708,11 @@
             const tokenCount = option.tokens;
 
             if (tokenCount > gameState.stepLimit) {
-                showMessage('lm-message', 
-                    `❌ Too many tokens! "${option.word}" uses ${tokenCount} token${tokenCount > 1 ? 's' : ''}, but the limit is ${gameState.stepLimit}. Try a different language!`, 
-                    'error');
+                showMessage(
+                    'lm-message',
+                    `❌ Too many tokens! "${option.word}" uses ${tokenCount} token${tokenCount > 1 ? 's' : ''}, but the limit is ${gameState.stepLimit}. Try a different language!`,
+                    'error'
+                );
                 return;
             }
 
@@ -700,7 +720,7 @@
             let moved = 0;
             for (let i = 0; i < tokenCount; i++) {
                 const newPos = { ...gameState.playerPos };
-                
+
                 // Try to move right first, then down
                 if (newPos.col < 6 && mazeLayout[newPos.row][newPos.col + 1] === 0) {
                     newPos.col++;
@@ -718,14 +738,17 @@
             updateLanguageMazeUI();
 
             const educational = `In this tokenizer, "${option.word}" (${option.lang}) uses ${tokenCount} token${tokenCount > 1 ? 's' : ''}. AI models "see" different languages as different-sized inputs!`;
-            
-            showMessage('lm-message', 
-                `✅ Good choice! You moved ${moved} step${moved > 1 ? 's' : ''} forward. ${educational}`, 
-                'info');
 
-            // Check win condition
-            if (gameState.playerPos.row === gameState.goalPos.row && 
-                gameState.playerPos.col === gameState.goalPos.col) {
+            showMessage(
+                'lm-message',
+                `✅ Good choice! You moved ${moved} step${moved > 1 ? 's' : ''} forward. ${educational}`,
+                'info'
+            );
+
+            if (
+                gameState.playerPos.row === gameState.goalPos.row &&
+                gameState.playerPos.col === gameState.goalPos.col
+            ) {
                 showMessage('lm-message', '🎉 You escaped the Token Labyrinth! You win!', 'success');
                 return;
             }
@@ -735,7 +758,8 @@
         }
 
         function updateLanguageMazeUI() {
-            document.getElementById('lm-position').textContent = `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
+            document.getElementById('lm-position').textContent =
+                `${gameState.playerPos.row}, ${gameState.playerPos.col}`;
         }
 
         // Maze rendering
@@ -789,4 +813,5 @@
     </script>
 </body>
 </html>
+
 
