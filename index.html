@@ -263,6 +263,12 @@
             <div class="description">
                 <p>Welcome, brave explorer! This game teaches you how AI models break text into <strong>tokens</strong>.</p>
                 <p>Tokens are the building blocks that large language models use to understand and generate text. Different words and languages use different numbers of tokens!</p>
+                <p><strong>Your goal:</strong> guide the wizard 🧙‍♂️ through the maze to reach the ⭐ exit.</p>
+                <p>
+                    In <strong>Token Guess Mode</strong>, correct guesses give you movement steps.  
+                    In <strong>Language Maze Mode</strong>, you choose between language versions without going over the step limit.
+                    If you keep choosing options that break the rules, you’ll stay stuck in the labyrinth instead of winning.
+                </p>
             </div>
             <div class="button-container">
                 <button onclick="startTokenGuessMode()">🎯 Start Token Guess Mode</button>
@@ -273,7 +279,11 @@
                 • How text is broken into tokens<br>
                 • Why some words use more tokens than others<br>
                 • How different languages affect token counts<br>
-                • Why this matters for AI models
+                • Why this matters for AI models<br><br>
+                <strong>🎮 How to win or get stuck:</strong><br>
+                • Reach the ⭐ to win the maze.<br>
+                • In Token Guess Mode, wrong guesses won’t move you, but you’ll see how the word is tokenized.<br>
+                • In Language Maze Mode, picking words with too many tokens keeps you from moving forward.
             </div>
         </div>
 
@@ -309,6 +319,9 @@
             </div>
 
             <div id="tg-message" class="message hidden"></div>
+
+            <!-- NEW: Explanation box after incorrect guesses -->
+            <div id="tg-explanation" class="info-box hidden"></div>
 
             <div id="tg-direction-panel" class="hidden">
                 <p style="text-align: center; margin: 15px 0;">Choose your direction:</p>
@@ -382,6 +395,25 @@
             "ecosystem": 4,
             "magnificent": 4,
             "JavaScript": 2
+        };
+
+        // NEW: Explanations for how each word is tokenized (concise, textual)
+        const tokenExplanations = {
+            "jellyfish": `In this tokenizer, "jellyfish" is treated as 3 pieces (subwords), so it counts as 3 tokens.`,
+            "internationalization": `"internationalization" is long, so it is broken into several subwords like "international", "iz", and "ation" for a total of 7 tokens.`,
+            "AI": `"AI" is short and common, so it is stored as a single token.`,
+            "photosynthesis": `"photosynthesis" is split into a few subwords such as "photo", "synth", and "esis", giving 4 tokens.`,
+            "algorithm": `"algorithm" is divided into several smaller parts, resulting in 3 tokens.`,
+            "butterfly": `"butterfly" is treated as multiple subword chunks, so it has 3 tokens.`,
+            "cat": `"cat" is a short, frequent word and fits into 1 token.`,
+            "extraordinary": `"extraordinary" is broken into several subwords (for example "extra" + "ordinary"), giving 5 tokens.`,
+            "hello": `"hello" is common and short, so it is stored as one token.`,
+            "cryptocurrency": `"cryptocurrency" is long and split into subwords like "crypto" and "currency", making 5 tokens.`,
+            "wavelength": `"wavelength" is divided into smaller pieces (like "wave" + "length"), so it has 3 tokens.`,
+            "biodiversity": `"biodiversity" is split into multiple subword chunks, giving 6 tokens.`,
+            "ecosystem": `"ecosystem" is divided into several subwords (like "eco" + "system"), resulting in 4 tokens.`,
+            "magnificent": `"magnificent" is split into smaller parts (for example "magni" + "ficent"), giving 4 tokens.`,
+            "JavaScript": `"JavaScript" is often stored as two parts, similar to "Java" + "Script", so it uses 2 tokens.`
         };
 
         // Language token data for Language Maze Mode
@@ -477,6 +509,14 @@
                 languageRound: 0,
                 stepLimit: 0
             };
+
+            // Clear any lingering messages/explanations
+            hideMessage('tg-message');
+            const expBox = document.getElementById('tg-explanation');
+            if (expBox) {
+                expBox.classList.add('hidden');
+                expBox.textContent = '';
+            }
         }
 
         // Token Guess Mode
@@ -502,10 +542,28 @@
             document.getElementById('tg-guess').value = '';
             hideMessage('tg-message');
             document.getElementById('tg-direction-panel').classList.add('hidden');
+
+            // Hide explanation for the new word until needed
+            const expBox = document.getElementById('tg-explanation');
+            expBox.classList.add('hidden');
+            expBox.textContent = '';
+        }
+
+        function getTokenExplanation(word, tokens) {
+            // Use custom explanation if available; otherwise fall back to a generic one
+            if (tokenExplanations[word]) {
+                return tokenExplanations[word];
+            }
+            if (tokens === 1) {
+                return `"${word}" is treated as one token — short, common words often fit into a single piece.`;
+            }
+            return `"${word}" is broken into ${tokens} smaller pieces called tokens, based on its spelling patterns.`;
         }
 
         function submitTokenGuess() {
             const guess = parseInt(document.getElementById('tg-guess').value);
+            const expBox = document.getElementById('tg-explanation');
+
             if (!guess) {
                 showMessage('tg-message', 'Please enter a number!', 'error');
                 return;
@@ -514,16 +572,28 @@
             if (guess === gameState.currentTokens) {
                 gameState.stepsRemaining = gameState.currentTokens;
                 gameState.wordsSolved++;
+
+                // Hide any previous explanation when the player is correct
+                expBox.classList.add('hidden');
+                expBox.textContent = '';
+
                 showMessage('tg-message', 
                     `✅ Correct! "${gameState.currentWord}" has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. You can move ${gameState.stepsRemaining} steps!`, 
                     'success');
                 document.getElementById('tg-direction-panel').classList.remove('hidden');
                 updateTokenGuessUI();
             } else {
+                // Show correct answer + explanation of tokenization
+                const explanationText = getTokenExplanation(gameState.currentWord, gameState.currentTokens);
+                expBox.textContent = explanationText;
+                expBox.classList.remove('hidden');
+
                 showMessage('tg-message', 
-                    `❌ Not quite! "${gameState.currentWord}" actually has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. Try the next word!`, 
+                    `❌ Not quite! "${gameState.currentWord}" actually has ${gameState.currentTokens} token${gameState.currentTokens > 1 ? 's' : ''}. Read the explanation below, then try the next word.`, 
                     'error');
-                setTimeout(loadNewWord, 2000);
+
+                // Give the player a bit more time to read the explanation
+                setTimeout(loadNewWord, 3000);
             }
         }
 
@@ -705,7 +775,9 @@
         }
 
         function hideMessage(id) {
-            document.getElementById(id).classList.add('hidden');
+            const msg = document.getElementById(id);
+            if (!msg) return;
+            msg.classList.add('hidden');
         }
 
         // Allow Enter key to submit guess
@@ -717,3 +789,4 @@
     </script>
 </body>
 </html>
+
